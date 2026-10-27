@@ -1,0 +1,51 @@
+Answer 1 — Find Acacia Entries in the Taxonomy Table
+
+Objective Find taxonomy entries whose species name begins with “Acacia”
+and count the matching entries.
+
+1.  Explore the table I inspected the database tables and the structure
+    of the taxonomy table to identify the species column.
+
+DESCRIBE taxonomy;
+
+2.  Search for Acacia I first considered a broad search for names
+    containing “Acacia”:
+
+SELECT * FROM taxonomy WHERE species LIKE ‘%Acacia%’ LIMIT 100;
+
+The percent signs (%) are SQL wildcards. This pattern matches “Acacia”
+anywhere in the species name.
+
+3.  Narrow the search to names beginning with Acacia To match only names
+    that start with “Acacia”, I used:
+
+SELECT * FROM taxonomy WHERE species LIKE ‘Acacia%’ LIMIT 100;
+
+This returned examples such as Acacia acradenia, Acacia acuminata,
+Acacia aneura var. intermedia, and Acacia auriculiformis x Acacia
+mangium.
+
+4.  Count the matching entries I ran:
+
+SELECT COUNT(*) FROM taxonomy WHERE species LIKE ‘Acacia%’;
+
+Result: 326
+
+5.  Check the number of distinct species values To verify how many
+    distinct species-name values matched, I ran:
+
+SELECT COUNT(DISTINCT species) FROM taxonomy WHERE species LIKE
+‘Acacia%’;
+
+Result: 326
+
+Conclusion The taxonomy table contains 326 matching entries whose
+species values begin with “Acacia”, representing 326 distinct matching
+species-name values in this table. The results can include names with
+varieties or hybrids, so this should be described as 326 distinct
+matching species values rather than necessarily 326 formally distinct
+botanical species.
+
+SQL concepts used - LIKE: matches text patterns. - %: wildcard for zero
+or more characters. - COUNT(*): counts matching rows. - COUNT(DISTINCT
+species): counts unique values in the species column.
