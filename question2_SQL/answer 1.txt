@@ -34,8 +34,7 @@ Result: 326
 5.  Check the number of distinct species values To verify how many
     distinct species-name values matched, I ran:
 
-SELECT COUNT(DISTINCT species) FROM taxonomy WHERE species LIKE
-‘Acacia%’;
+SELECT COUNT(DISTINCT species) FROM taxonomy WHERE species LIKE 'Acacia%';
 
 Result: 326
 
