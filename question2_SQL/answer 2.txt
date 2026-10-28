@@ -91,4 +91,7 @@ AND r.mol_type = 'genomic DNA'
 ORDER BY r.length DESC
 LIMIT 1;
 
+
+SELECT t.species, r.rfamseq_acc, r.length, r.description FROM rfamseq AS r JOIN taxonomy AS t ON r.ncbi_id = t.ncbi_id WHERE r.ncbi_id IN (SELECT ncbi_id FROM taxonomy WHERE species IN ('Triticum aestivum (bread wheat)', 'Triticum durum (durum wheat)')) AND r.mol_type = 'genomic DNA' ORDER BY r.length DESC LIMIT 1;
+
 This avoids hardcoding the numeric taxonomy IDs, while explicitly naming the two wheat types being compared.
