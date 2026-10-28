@@ -1,0 +1,94 @@
+Answer 2 — Find the Longest Wheat Genomic DNA Sequence
+
+Objective
+Identify which wheat type has the longest genomic DNA sequence in the Rfam database by joining the rfamseq and taxonomy tables.
+
+1. Inspect the table structures
+I inspected the columns in rfamseq and taxonomy.
+
+Relevant rfamseq columns:
+- ncbi_id: taxonomy identifier used to connect a sequence record to taxonomy.
+- mol_type: molecule type.
+- length: sequence length in base pairs.
+- rfamseq_acc: sequence accession.
+- description: sequence description.
+
+Relevant taxonomy columns:
+- ncbi_id: taxonomy identifier.
+- species: taxonomy species name.
+- tax_string: full taxonomy classification.
+
+2. Find wheat-related taxonomy entries
+I searched the taxonomy table for the word “wheat” in the species name or taxonomic classification:
+
+SELECT ncbi_id, species, tax_string
+FROM taxonomy
+WHERE species LIKE '%wheat%'
+   OR tax_string LIKE '%wheat%'
+LIMIT 50;
+
+The results included:
+- Triticum aestivum (bread wheat), ncbi_id 4565.
+- Triticum durum (durum wheat), ncbi_id 4567.
+
+The search also returned viruses, fungi, insects, and other organisms with “wheat” in their names, so the comparison was narrowed to the two wheat types above.
+
+3. Compare their genomic DNA sequence records
+I joined rfamseq to taxonomy using ncbi_id, filtered to the two wheat taxonomy IDs and genomic DNA, sorted by sequence length in descending order, and selected the first record:
+
+SELECT
+    t.species,
+    r.rfamseq_acc,
+    r.length,
+    r.description
+FROM rfamseq AS r
+JOIN taxonomy AS t
+    ON r.ncbi_id = t.ncbi_id
+WHERE r.ncbi_id IN (4565, 4567)
+  AND r.mol_type = 'genomic DNA'
+ORDER BY r.length DESC
+LIMIT 1;
+
+Result:
+- Species: Triticum durum (durum wheat)
+- Sequence accession: LT934116.1
+- Length: 836514780 base pairs
+- Description begins: LT934116.1 Triticum turgidum subsp. durum genom...
+
+4. Interpretation
+Among the matching genomic DNA records for bread wheat and durum wheat, the longest record returned belonged to durum wheat (Triticum durum), with a length of 836,514,780 base pairs.
+
+Important qualification
+This query compares individual genomic DNA sequence records associated with the two taxonomy IDs. It does not necessarily compare the total or complete genome sizes of the two wheat types. It identifies the longest matching record in the queried Rfam data.
+
+SQL concepts used
+- JOIN: combines related rows from rfamseq and taxonomy.
+- WHERE and IN: filters sequence records to selected taxonomy IDs.
+- mol_type: restricts the search to genomic DNA records.
+- ORDER BY ... DESC: sorts longest sequences first.
+- LIMIT 1: returns the single longest matching record.
+
+Possible improvement
+The taxonomy IDs can be looked up dynamically instead of hardcoding 4565 and 4567. For example, the species names can be used in a subquery:
+
+SELECT
+    t.species,
+    r.rfamseq_acc,
+    r.length,
+    r.description
+FROM rfamseq AS r
+JOIN taxonomy AS t
+    ON r.ncbi_id = t.ncbi_id
+WHERE r.ncbi_id IN (
+    SELECT ncbi_id
+    FROM taxonomy
+    WHERE species IN (
+        'Triticum aestivum (bread wheat)',
+        'Triticum durum (durum wheat)'
+    )
+)
+AND r.mol_type = 'genomic DNA'
+ORDER BY r.length DESC
+LIMIT 1;
+
+This avoids hardcoding the numeric taxonomy IDs, while explicitly naming the two wheat types being compared.
