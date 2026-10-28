@@ -1,0 +1,99 @@
+Answer 3 — Find Rfam Families with Longest DNA Sequence Records
+
+Objective
+Find Rfam families associated with genomic DNA sequence records longer than 1,000,000 base pairs. Sort the families by maximum sequence-record length in descending order and retrieve page 9 with 15 results per page.
+
+1. Inspect the relevant tables
+I explored the Rfam database tables and identified three tables needed for this task: full_region, family, and rfamseq.
+
+I used DESCRIBE family to inspect the family table.
+Relevant columns:
+- rfam_acc: the Rfam family accession.
+- rfam_id: the family identifier or name.
+
+I used DESCRIBE full_region to inspect the table connecting families to sequence records.
+Relevant columns:
+- rfam_acc: the Rfam family accession.
+- rfamseq_acc: the associated sequence accession.
+- seq_start and seq_end: coordinates of the matched region.
+- type: indicates whether a region is a seed or full match.
+
+The relevant rfamseq columns were:
+- rfamseq_acc: sequence record accession.
+- mol_type: molecule type.
+- length: length of the full sequence record.
+- description: sequence description.
+
+2. Test the join between full_region and rfamseq
+I first checked whether the sequence accession in full_region could be matched to the sequence accession in rfamseq:
+
+SELECT fr.rfam_acc, fr.rfamseq_acc, rs.mol_type, rs.length FROM full_region AS fr JOIN rfamseq AS rs ON fr.rfamseq_acc = rs.rfamseq_acc LIMIT 10;
+
+This returned a small sample showing family accessions, sequence accessions, molecule types, and sequence lengths. It confirmed that the join worked.
+
+3. Inspect longer sequence records
+I then tested a sequence-length filter while inspecting sample joined records:
+
+SELECT fr.rfam_acc, fr.rfamseq_acc, rs.mol_type, rs.length FROM full_region AS fr JOIN rfamseq AS rs ON fr.rfamseq_acc = rs.rfamseq_acc AND rs.length > 100000 LIMIT 10;
+
+This was an exploratory test using a threshold of 100,000. It was not the final assignment filter; the final query uses genomic DNA and a family-level maximum greater than 1,000,000.
+
+4. Join the family table
+To include the family name in the output, I joined family to full_region using rfam_acc. I joined rfamseq to full_region using rfamseq_acc.
+
+These joins connect each Rfam family to its associated sequence records and provide the family identifier and sequence length.
+
+5. Filter genomic DNA records
+I used WHERE rs.mol_type = 'genomic DNA' to restrict the rows included in the calculation to genomic DNA sequence records.
+
+6. Calculate the maximum length for each family
+I used MAX(rs.length) AS max_length and grouped by fr.rfam_acc and fam.rfam_id. This calculates the maximum length of the full DNA sequence record associated with each family and returns one row per family.
+
+7. Apply the length threshold
+I used HAVING MAX(rs.length) > 1000000 to keep only families whose maximum associated genomic DNA sequence-record length is greater than 1,000,000 base pairs. HAVING is used because this condition applies to the aggregate calculated for each group.
+
+8. Sort and paginate the results
+I used ORDER BY max_length DESC to sort the families from the largest maximum sequence-record length to the smallest.
+
+The task requests page 9 with 15 results per page. Since page numbering starts at 1, the offset is (page number - 1) × page size:
+(9 - 1) × 15 = 120.
+
+Therefore, LIMIT 15 OFFSET 120 skips the first 120 rows and returns up to 15 rows for page 9.
+
+Final SQL query
+SELECT fr.rfam_acc, fam.rfam_id, MAX(rs.length) AS max_length FROM full_region AS fr JOIN family AS fam ON fr.rfam_acc = fam.rfam_acc JOIN rfamseq AS rs ON fr.rfamseq_acc = rs.rfamseq_acc WHERE rs.mol_type = 'genomic DNA' GROUP BY fr.rfam_acc, fam.rfam_id HAVING MAX(rs.length) > 1000000 ORDER BY max_length DESC LIMIT 15 OFFSET 120;
+
+Result
+The query executed successfully and returned 15 rows:
+
+rfam_acc | rfam_id      | max_length
+RF01219  | snoR100      | 836514780
+RF01220  | snoR104      | 836514780
+RF01224  | snoR80       | 836514780
+RF01227  | snoR83       | 836514780
+RF01284  | snoR8a       | 836514780
+RF01286  | snoR26       | 836514780
+RF01292  | snoR2        | 836514780
+RF01300  | snoU49       | 836514780
+RF01847  | Plant_U3     | 836514780
+RF01848  | ACEA_U3      | 836514780
+RF01856  | Protozoa_SRP | 836514780
+RF01911  | MIR2118      | 836514780
+RF03160  | twister-P1   | 836514780
+RF03209  | MIR9657      | 836514780
+RF03674  | MIR5387      | 836514780
+
+Interpretation
+The query returned 15 families for page 9. Each displayed family has a maximum associated genomic DNA sequence-record length of 836,514,780 base pairs.
+
+Important qualification
+The query uses MAX(rs.length), so it measures the length of the entire DNA sequence record associated with each family, not the length of the matched region. The matched region coordinates are stored in full_region.seq_start and full_region.seq_end. This interpretation describes the query that was actually executed.
+
+SQL concepts used
+- JOIN: combines related rows from full_region, family, and rfamseq.
+- WHERE: filters records to genomic DNA.
+- MAX(): calculates the maximum associated sequence-record length.
+- GROUP BY: groups records by family.
+- HAVING: filters groups based on the aggregate maximum.
+- ORDER BY ... DESC: sorts from longest to shortest.
+- LIMIT and OFFSET: retrieve the requested page.
